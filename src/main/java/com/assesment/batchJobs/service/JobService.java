@@ -140,30 +140,36 @@ public class JobService {
     }
 
     private void executeJob(Job job) {
-        log.info("Executing job: {}", job.getName());
-        log.debug("Job Payload content is {}", job.getPayload());
-        // Simulate job execution
-        if (job.getPayload() != null && job.getPayload().containsKey("simulateFailure")) {
-            throw new RuntimeException("Simulated job failure");
+        String jobInfo = String.format(
+                "Executing job [ID:%s, Name:%s, Type:%s]",
+                job.getId(),
+                job.getName(),
+                job.getScheduleType()
+        );
+
+        log.debug("{} - Start execution at {}", jobInfo, LocalDateTime.now());
+
+        try {
+            log.debug("{} - Processing payload: {}", jobInfo, job.getPayload());
+
+            job.setLastRunAt(LocalDateTime.now());
+            calculateNextRun(job);
+            jobRepository.save(job);
+
+            log.debug("{} - Execution completed successfully", jobInfo);
+        } catch (Exception e) {
+            log.error("{} - Execution failed: {}", jobInfo, e.getMessage());
+            throw e;
         }
-
-        job.setLastRunAt(LocalDateTime.now());
-        calculateNextRun(job);
-        log.info("Next Job forecast execution will occur in {}.", job.getNextRunAt());
-        jobRepository.save(job);
     }
-
     private void calculateNextRun(Job job) {
         if (job.getScheduleType() == ScheduleType.CRON) {
             try {
-                // Define the cron definition for Quartz format
                 CronDefinition cronDefinition = CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ);
                 CronParser parser = new CronParser(cronDefinition);
 
-                // Parse the expression
                 Cron quartzCron = parser.parse(job.getCronExpression());
 
-                // Calculate next execution
                 ExecutionTime executionTime = ExecutionTime.forCron(quartzCron);
                 Optional<ZonedDateTime> nextExecution = executionTime.nextExecution(ZonedDateTime.now());
 
@@ -181,6 +187,7 @@ public class JobService {
             job.setNextRunAt(LocalDateTime.now().plusNanos(job.getFixedRateMs() * 1_000_000));
         }
     }
+
     private void handleRetryPolicy(Job job) {
         Map<String, Object> retryPolicy = job.getRetryPolicy() != null ?
                 job.getRetryPolicy() : new HashMap<>();
