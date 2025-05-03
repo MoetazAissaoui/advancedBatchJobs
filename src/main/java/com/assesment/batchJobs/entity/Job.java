@@ -1,17 +1,19 @@
 package com.assesment.batchJobs.entity;
 
-import com.assesment.batchJobs.models.JobStatus;
-import com.assesment.batchJobs.models.ScheduleType;
+import com.assesment.batchJobs.entity.enums.JobStatus;
+import com.assesment.batchJobs.entity.enums.ScheduleType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -22,33 +24,36 @@ import java.util.UUID;
 @AllArgsConstructor
 public class Job {
     @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
     @Column(nullable = false, unique = true)
     private String name;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private ScheduleType scheduleType;
 
     private String cronExpression;
     private Long fixedRateMs;
 
-    @Column(columnDefinition = "jsonb")
-    private String payload;
+    @JdbcTypeCode(SqlTypes.JSON)
+    private Map<String, Object> payload;
 
-    @Column(columnDefinition = "jsonb")
-    private String retryPolicy;
+    @JdbcTypeCode(SqlTypes.JSON)
+    private Map<String, Object> retryPolicy;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     @Builder.Default
     private JobStatus status = JobStatus.ACTIVE;
 
     @CreationTimestamp
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
+    @Column(nullable = false)
     private LocalDateTime updatedAt;
 
     private LocalDateTime lastRunAt;
@@ -57,4 +62,3 @@ public class Job {
     @Version
     private Long version;
 }
-
