@@ -50,7 +50,7 @@ java -jar target/your-application-name.jar
 
 #### Option B: Run in IntelliJ
 1. Open the project in IntelliJ
-2. Locate the main class (`SchedulerApplication.java`)
+2. Locate the main class (`BatchJobsApplication.java`)
 3. Right-click and select "Run"
 
 ## API Documentation
